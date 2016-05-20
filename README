@@ -1,14 +1,14 @@
-gfslogger v0.9
+gfslogger v1.0
 
-This program subscribes to Mac OS X 10.4 fsevents and prints to standard
+This program subscribes to Mac OS X 10.4 (& up) fsevents and prints to standard
 output all filesystem events it receives.
 
 The fsevents api is the same used by Spotlight to receive file system changes
 immediately as they occur without constant polling. It is currently private
 and undocumented by Apple.
 
-This program should only work on Mac OS X 10.4 "Tiger" and it has only been
-tested with the version of gcc provided with XCode 2.1, YMMV.
+This program should work on Mac OS X 10.4 "Tiger" (& up) and it has only been
+tested with the author's C compiler. YMMV.
 
 There is one major caveat to be concerned with (from kernelthread.com):
 
@@ -40,4 +40,4 @@ fsevents.h is licensed under the APSL and owned by Apple.
 gfslogger.c is licensed under the GPL and owned by Me (Rian Hunter).
 
 Rian Hunter
-rian at thelaststop point net
+rian@alum.mit.edu
