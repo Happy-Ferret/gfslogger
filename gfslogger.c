@@ -1,10 +1,10 @@
 /*
 ###############################################################################
 #                                                                             #
-#   gfslogger v0.9                                                            #
+#   gfslogger v1.0                                                            #
 #   Subscribes to Mac OS X 10.4 fsevents and displays all filesystem changes. #
 #                                                                             #
-#   Copyright (C) 2005 Rian Hunter [rian at thelaststop point net]            #
+#   Copyright (C) 2016, 2005 Rian Hunter, rian@alum.mit.edu                   #
 #                                                                             #
 #   This program is free software; you can redistribute it and/or modify      #
 #   it under the terms of the GNU General Public License as published by      #
@@ -136,10 +136,13 @@ static void process_event_data(void *in_buf, int size) {
   printf("=> received %d bytes\n", size);
 
   do {
+    int32_t type;
     printf("# Event\n");
 
+    memcpy(&type, in_buf + pos, sizeof(type));
+
     printf("  type           = ");
-    switch (*((int32_t *) (in_buf + pos))) {
+    switch (type) {
     case FSE_CREATE_FILE:
       printf("CREATE FILE");
       break;
@@ -175,7 +178,8 @@ static void process_event_data(void *in_buf, int size) {
     printf("\n");
     pos += 4;
 
-    pid = *((pid_t *) (in_buf + pos));
+    memcpy(&pid, in_buf + pos, sizeof(pid));
+
     get_process_name(pid, buffer, sizeof(buffer));
 
     printf("  pid            = %d (%s)\n", pid, buffer);
@@ -185,7 +189,7 @@ static void process_event_data(void *in_buf, int size) {
            "    # type       len  data\n");
 
     while(1) {
-      argtype = *((u_int16_t *) (in_buf + pos));
+      memcpy(&argtype, in_buf + pos, sizeof(argtype));
       pos += 2;
 
       if (FSE_ARG_DONE == argtype) {
@@ -193,7 +197,7 @@ static void process_event_data(void *in_buf, int size) {
         break;
       }
 
-      arglen = *((u_int16_t *) (in_buf + pos));
+      memcpy(&arglen, in_buf + pos, sizeof(arglen));
       pos += 2;
 
       switch(argtype) {
@@ -207,42 +211,92 @@ static void process_event_data(void *in_buf, int size) {
         printf("    PATH%12d  path   = %s\n", arglen, (in_buf + pos));
         break;
       case FSE_ARG_INT32:
-        printf("    INT32%11d  int32  = %d\n",
-               arglen, *((int32_t *) (in_buf + pos)));
+        if (arglen == sizeof(int32_t)) {
+          int32_t val;
+          memcpy(&val, in_buf + pos, sizeof(val));
+          printf("    INT32%11d  int32  = %d\n",
+                 arglen, val);
+        }
+        else {
+          printf("    INT32%11d  int32\n", arglen);
+        }
         break;
       case FSE_ARG_INT64: // not supported in kernel yet
-        printf("    INT64%11d  int64  = %lld\n",
-               arglen, *((int64_t *) (in_buf + pos)));
+        if (arglen == sizeof(int64_t)) {
+          int64_t val;
+          memcpy(&val, in_buf + pos, sizeof(val));
+          printf("    INT64%11d  int64  = %lld\n",
+                 arglen, val);
+        }
+        else {
+          printf("    INT64%11d  int64\n", arglen);
+        }
         break;
       case FSE_ARG_RAW: // just raw bytes, can't display
         printf("    RAW%13d  raw\n",
                arglen);
         break;
       case FSE_ARG_INO:
-        printf("    INODE%11d  ino    = %d\n",
-               arglen, *((ino_t *) (in_buf + pos)));
+        {
+          if (arglen == sizeof(uint32_t)) {
+            uint32_t val;
+            memcpy(&val, in_buf + pos, sizeof(val));
+            printf("    INODE%11d  ino    = %u\n",
+                   arglen, val);
+          }
+          else if (arglen == sizeof(uint64_t)) {
+            uint64_t val;
+            memcpy(&val, in_buf + pos, sizeof(val));
+            printf("    INODE%11d  ino    = %llu\n",
+                   arglen, val);
+          }
+          else {
+            printf("    INODE%11d  ino\n",
+                   arglen);
+          }
+        }
         break;
       case FSE_ARG_UID:
-        uid = *((uid_t *) (in_buf + pos));
-        printf("    UID%13d  uid    = %d (%s)\n",
-               arglen, uid, (getpwuid(uid))->pw_name);
+        if (arglen == sizeof(uid)) {
+          memcpy(&uid, in_buf + pos, sizeof(uid));
+          printf("    UID%13d  uid    = %d (%s)\n",
+                 arglen, uid, (getpwuid(uid))->pw_name);
+        }
+        else {
+          printf("    UID%13d  uid\n", arglen);
+        }
         break;
       case FSE_ARG_DEV:
-        device = *((dev_t *) (in_buf + pos));
-        printf("    DEV%13d  dev    = 0x%x (major %d, minor %d)\n",
-               arglen, device,
-               (device >> 24) & 0x0FFFFFF, device & 0x0FFFFFF);
+        if (arglen == sizeof(device)) {
+          memcpy(&device, in_buf + pos, sizeof(device));
+          printf("    DEV%13d  dev    = 0x%x (major %d, minor %d)\n",
+                 arglen, device,
+                 (device >> 24) & 0x0FFFFFF, device & 0x0FFFFFF);
+        }
+        else {
+          printf("    DEV%13d  dev\n", arglen);
+        }
         break;
       case FSE_ARG_MODE:
-        mode = *((int32_t *) (in_buf + pos));
-        get_mode_string(mode, buffer);
-        printf("    MODE%12d  mode   = %s (0x%06x, vnode type %s)\n",
-               arglen, buffer, mode, get_vnode_type(mode));
+        if (arglen == sizeof(mode)) {
+          memcpy(&mode, in_buf + pos, sizeof(mode));
+          get_mode_string(mode, buffer);
+          printf("    MODE%12d  mode   = %s (0x%06x, vnode type %s)\n",
+                 arglen, buffer, mode, get_vnode_type(mode));
+        }
+        else {
+          printf("    MODE%12d  mode\n", arglen);
+        }
         break;
       case FSE_ARG_GID:
-        gid = *((gid_t *) (in_buf + pos));
-        printf("    GID%13d  gid    = %d (%s)\n",
-               arglen, gid, (getgrgid(gid))->gr_name);
+        if (arglen == sizeof(gid)) {
+          memcpy(&gid, in_buf + pos, sizeof(gid));
+          printf("    GID%13d  gid    = %d (%s)\n",
+                 arglen, gid, (getgrgid(gid))->gr_name);
+        }
+        else {
+          printf("    GID%13d  gid\n", arglen);
+        }
         break;
       default:
         return; // <----------we return if invalid type (give up on this data)
