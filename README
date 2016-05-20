@@ -1,0 +1,43 @@
+gfslogger v0.9
+
+This program subscribes to Mac OS X 10.4 fsevents and prints to standard
+output all filesystem events it receives.
+
+The fsevents api is the same used by Spotlight to receive file system changes
+immediately as they occur without constant polling. It is currently private
+and undocumented by Apple.
+
+This program should only work on Mac OS X 10.4 "Tiger" and it has only been
+tested with the version of gcc provided with XCode 2.1, YMMV.
+
+There is one major caveat to be concerned with (from kernelthread.com):
+
+The interface that fslogger uses is private to Apple. Currently, there is a
+caveat regarding th  use of this interface by third parties (including
+fslogger). While the change notification interfac  supports multiple clients, 
+there is a single kernel buffer for holding events that are to be delivered to
+one or more subscribers, with the primary subscriber being Spotlight. Now, 
+the kernel must hold events until it has notified all subscribers that are 
+interested in them. Since there is a single buffer, a slow subscriber can 
+cause it to overflow. If this happens, events will be dropped for all 
+subscribers, including Spotlight. Consequently, Spotlight may need to look 
+at the entire volume to determine "what changed".
+
+fslogger is meant to be a learning tool. If you use it, you must understand
+the aforementioned caveat. If you cause heavy enough file system activity 
+(what's "heavy" will vary greatly, depending on your system and its currently 
+available resources), both fslogger and Spotlight may miss events, causing 
+Spotlight to spend some extra time looking at your volume. Note that Spotlight 
+will not reindex the entire volume — it will only look for the changes that 
+it missed.
+
+An example of a typically heavy file system activity (that may quite possibly 
+cause events to b  dropped) is unpacking a giant tarball. Finally, if events 
+are missed, fslogger will indicate that event (missing events is an event 
+itself).
+
+fsevents.h is licensed under the APSL and owned by Apple.
+gfslogger.c is licensed under the GPL and owned by Me (Rian Hunter).
+
+Rian Hunter
+rian at thelaststop point net
