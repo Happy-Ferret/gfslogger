@@ -79,6 +79,10 @@ int main() {
   event_list[FSE_FINDER_INFO_CHANGED] = FSE_REPORT;
   event_list[FSE_CREATE_DIR]          = FSE_REPORT;
   event_list[FSE_CHOWN]               = FSE_REPORT;
+  event_list[FSE_XATTR_MODIFIED]      = FSE_REPORT;
+  event_list[FSE_XATTR_REMOVED]       = FSE_REPORT;
+  event_list[FSE_DOCID_CREATED]       = FSE_REPORT;
+  event_list[FSE_DOCID_CHANGED]       = FSE_REPORT;
 
   fd = open("/dev/fsevents", 0, 2);
   if (fd < 0)
@@ -169,6 +173,18 @@ static void process_event_data(void *in_buf, int size) {
       break;
     case FSE_CHOWN:
       printf("CHOWN");
+      break;
+    case FSE_XATTR_MODIFIED:
+      printf("XATTR MODIFIED");
+      break;
+    case FSE_XATTR_REMOVED:
+      printf("XATTR REMOVED");
+      break;
+    case FSE_DOCID_CREATED:
+      printf("DOCID CREATED");
+      break;
+    case FSE_DOCID_CHANGED:
+      printf("DOCID CHANGED");
       break;
     case FSE_INVALID: default:
       printf("INVALID");
